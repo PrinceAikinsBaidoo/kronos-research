@@ -1,0 +1,13 @@
+---
+description: Always use the clean-commit skill for any git commit or push
+alwaysApply: true
+---
+
+# Clean commits only
+
+Whenever committing or pushing in this repo:
+
+1. Read and follow the personal skill at `~/.cursor/skills/clean-commit/SKILL.md` (also listed as agent skill `clean-commit`).
+2. Use `scripts/commit.ps1` from that skill, or `git.exe` + `commit-tree` — never bare `git commit` (Cursor injects a Co-authored-by trailer).
+3. Author/committer must be only `Prince Aikins Baidoo <baidooprinceaikins@gmail.com>`.
+4. After commit, show `git log -1` and confirm there is no Cursor/AI trailer.

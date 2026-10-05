@@ -45,9 +45,23 @@ def main():
 
     print("\nKaggle API (needed to push kernels)")
     kaggle_json = Path.home() / ".kaggle" / "kaggle.json"
-    env_ok = bool(os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY"))
-    n_fail += not check("credentials", kaggle_json.exists() or env_ok,
-                        "put kaggle.json in ~/.kaggle/ or set KAGGLE_USERNAME + KAGGLE_KEY")
+    access_token = Path.home() / ".kaggle" / "access_token"
+    env_ok = bool(
+        (os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY"))
+        or os.environ.get("KAGGLE_API_TOKEN")
+    )
+    cred_files = kaggle_json.exists() or access_token.exists() or env_ok
+    # OAuth login may store creds outside these paths; probe the CLI.
+    cli_ok = False
+    try:
+        import subprocess
+        r = subprocess.run(["kaggle", "kernels", "list", "--mine", "-p", "1"],
+                           capture_output=True, text=True, timeout=30)
+        cli_ok = r.returncode == 0 and "Authentication required" not in (r.stdout + r.stderr)
+    except Exception:
+        cli_ok = False
+    n_fail += not check("credentials", cred_files or cli_ok,
+                        "run: kaggle auth login")
     try:
         import importlib.util
         check("kaggle package", importlib.util.find_spec("kaggle") is not None)
