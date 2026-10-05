@@ -1,0 +1,9 @@
+.kaggle_push/
+experiments/*/kaggle_out/
+__pycache__/
+*.pyc
+STOP
+cache/
+Kronos/
+*.egg-info/
+.venv/

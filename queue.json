@@ -1,0 +1,11 @@
+[
+  {"id": "H000", "title": "Noise floor: default config with seeds 42, 43, 44", "priority": 1, "status": "open", "depends_on": [], "assets": ["BTC"], "change": "none (seed only)", "reason": "Needed to know what counts as an improvement."},
+  {"id": "H001", "title": "Default CMAA (2 layers after block 6, 2 after block 9), both losses", "priority": 2, "status": "open", "depends_on": ["H000"], "assets": ["BTC", "XAU"], "change": "none (reference run)", "reason": "Reference point for every later change."},
+  {"id": "H002", "title": "Zero-init gated residual vs ungated", "priority": 3, "status": "open", "depends_on": ["H001"], "assets": ["BTC"], "change": "adapter.gate: false", "reason": "Checks whether the gate protects the frozen backbone early in training."},
+  {"id": "H003", "title": "Contrastive temperature tau: 0.03, 0.07, 0.15", "priority": 4, "status": "open", "depends_on": ["H001"], "assets": ["BTC"], "change": "contrastive.tau", "reason": "Proposal flags sensitivity to tau as a threat to validity."},
+  {"id": "H004", "title": "Contrastive weight lambda: 0.0, 0.25, 0.5, 1.0", "priority": 5, "status": "open", "depends_on": ["H001"], "assets": ["BTC", "XAU"], "change": "contrastive.weight", "reason": "lambda = 0.0 is the planned no-contrastive ablation."},
+  {"id": "H005", "title": "Insertion point: block 6 only vs block 9 only vs both", "priority": 6, "status": "open", "depends_on": ["H001"], "assets": ["BTC"], "change": "adapter.insert_after", "reason": "Where grounding helps most."},
+  {"id": "H006", "title": "Adapter depth: 1, 2, 4 layers per insertion point", "priority": 7, "status": "open", "depends_on": ["H005"], "assets": ["BTC"], "change": "adapter.layers_per_point", "reason": "Capacity versus overfitting."},
+  {"id": "H007", "title": "Max text tokens per headline: 64 vs 128", "priority": 8, "status": "open", "depends_on": ["H001"], "assets": ["BTC", "XAU"], "change": "data.max_text_tokens", "reason": "XAUUSD macro text is longer; checks truncation effects."},
+  {"id": "H008", "title": "Focal gamma: 0, 1, 2, 3", "priority": 9, "status": "open", "depends_on": ["H001"], "assets": ["BTC"], "change": "loss.focal_gamma", "reason": "Class imbalance handling."}
+]
