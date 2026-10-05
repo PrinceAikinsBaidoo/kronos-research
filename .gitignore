@@ -12,3 +12,5 @@ venv/
 .env.local
 *.pem
 kaggle.json
+data/raw/*.csv
+data/raw/_dukascopy_tmp/
