@@ -1,5 +1,8 @@
 .kaggle_push/
+.kaggle_push_cache/
+.kaggle_raw_dataset/
 experiments/*/kaggle_out/
+experiments/_cache_build/
 __pycache__/
 *.pyc
 STOP
@@ -14,3 +17,4 @@ venv/
 kaggle.json
 data/raw/*.csv
 data/raw/_dukascopy_tmp/
+data/raw/_news_tmp/

@@ -24,6 +24,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +51,20 @@ def month_range(start: date, end: date):
             y, m = y + 1, 1
 
 
+def _open_times_to_utc(ot: pd.Series) -> pd.Series:
+    """Binance Vision mixes ms and us epochs across months — detect per value."""
+    ot = ot.astype("int64")
+    # us if >= 1e14 (year ~1973 in ms would be smaller; 2020-ms ~1.6e12, 2020-us ~1.6e15)
+    unit = np.where(ot >= 10**14, "us", "ms")
+    # pandas needs a single unit; split and concat
+    out = pd.Series(pd.NaT, index=ot.index, dtype="datetime64[ns, UTC]")
+    for u in ("ms", "us"):
+        mask = (unit == u) if u == "us" else (ot < 10**14)
+        if mask.any():
+            out.loc[mask] = pd.to_datetime(ot.loc[mask], unit=u, utc=True)
+    return out
+
+
 def fetch_btc(start: date, end: date, out: Path) -> Path:
     frames = []
     missing = []
@@ -68,8 +83,9 @@ def fetch_btc(start: date, end: date, out: Path) -> Path:
         with zipfile.ZipFile(io.BytesIO(raw)) as zf:
             csv_name = zf.namelist()[0]
             df = pd.read_csv(zf.open(csv_name), header=None, names=BINANCE_COLS)
+        df["timestamp"] = _open_times_to_utc(df["open_time"])
         frames.append(df)
-        print(f"  + {name}  rows={len(df)}")
+        print(f"  + {name}  rows={len(df)}  {df['timestamp'].iloc[0]} -> {df['timestamp'].iloc[-1]}")
 
     if not frames:
         raise SystemExit("No Binance months downloaded; check --start/--end")
@@ -77,10 +93,6 @@ def fetch_btc(start: date, end: date, out: Path) -> Path:
         print(f"  (skipped {len(missing)} missing month file(s), e.g. {missing[0]})")
 
     df = pd.concat(frames, ignore_index=True)
-    # Binance Vision switched some files to microseconds; detect by magnitude.
-    ot = df["open_time"].astype("int64")
-    unit = "us" if ot.iloc[0] > 10**15 else "ms"
-    df["timestamp"] = pd.to_datetime(ot, unit=unit, utc=True)
     out_df = pd.DataFrame({
         "timestamp": df["timestamp"],
         "open": df["open"].astype(float),
@@ -98,8 +110,17 @@ def fetch_btc(start: date, end: date, out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(out, index=False)
     print(f"Wrote {out}  bars={len(out_df)}  "
-          f"{out_df['timestamp'].iloc[0]} → {out_df['timestamp'].iloc[-1]}")
+          f"{out_df['timestamp'].iloc[0]} -> {out_df['timestamp'].iloc[-1]}")
     return out
+
+
+def _npx_cmd() -> list[str]:
+    """Resolve npx on Windows (npx.cmd) so subprocess finds it."""
+    for name in ("npx.cmd", "npx"):
+        p = Path(r"C:\Program Files\nodejs") / name
+        if p.exists():
+            return [str(p)]
+    return ["npx"]
 
 
 def fetch_xau(start: date, end: date, out: Path) -> Path:
@@ -107,8 +128,8 @@ def fetch_xau(start: date, end: date, out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp_dir = out.parent / "_dukascopy_tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        "npx", "--yes", "dukascopy-node",
+    cmd = _npx_cmd() + [
+        "--yes", "dukascopy-node",
         "-i", "xauusd",
         "-from", start.isoformat(),
         "-to", end.isoformat(),
@@ -120,7 +141,7 @@ def fetch_xau(start: date, end: date, out: Path) -> Path:
     ]
     print("  running:", " ".join(cmd))
     try:
-        r = subprocess.run(cmd, cwd=ROOT, check=False, text=True, capture_output=True)
+        r = subprocess.run(cmd, cwd=ROOT, check=False, text=True, capture_output=True, shell=False)
     except FileNotFoundError as e:
         raise SystemExit(
             "npx/Node.js not found. Install Node LTS, then re-run --asset XAU.\n"
@@ -160,7 +181,7 @@ def fetch_xau(start: date, end: date, out: Path) -> Path:
     out_df = out_df.sort_values("timestamp").drop_duplicates("timestamp")
     out_df.to_csv(out, index=False)
     print(f"Wrote {out}  bars={len(out_df)}  "
-          f"{out_df['timestamp'].iloc[0]} → {out_df['timestamp'].iloc[-1]}  (from {src.name})")
+          f"{out_df['timestamp'].iloc[0]} -> {out_df['timestamp'].iloc[-1]}  (from {src.name})")
     return out
 
 
@@ -181,10 +202,10 @@ def main():
     a.out_dir.mkdir(parents=True, exist_ok=True)
 
     if a.asset in ("BTC", "ALL"):
-        print(f"[BTC] Binance Vision {start} → {end}")
+        print(f"[BTC] Binance Vision {start} -> {end}")
         fetch_btc(start, end, a.out_dir / "btc_1h.csv")
     if a.asset in ("XAU", "ALL"):
-        print(f"[XAU] Dukascopy H1 {start} → {end}")
+        print(f"[XAU] Dukascopy H1 {start} -> {end}")
         fetch_xau(start, end, a.out_dir / "xau_1h.csv")
     print("Done. Next: fetch news CSVs, then python scripts/qa_raw_data.py")
 

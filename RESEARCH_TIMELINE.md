@@ -39,10 +39,10 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 
 | Need | Primary source | Confluence / cross-check | Cost | Status |
 | --- | --- | --- | --- | --- |
-| BTC prices 1h | [Binance Vision](https://data.binance.vision/) spot `BTCUSDT/1h` | Optional CryptoCompare bars | Free | To fetch |
-| XAU prices 1h | Dukascopy H1 (`dukascopy-node`) | Optional second broker/OpenDataBay spot-check | Free | To fetch |
-| BTC news | Kaggle BTC news 2021–2024 CSV | HF CoinTelegraph + CryptoCompare news API | Free | To fetch |
-| XAU news | Parse.bot → ForexFactory | GDELT / metals+USD macro RSS | Free credits + DIY | Key ready |
+| BTC prices 1h | [Binance Vision](https://data.binance.vision/) spot `BTCUSDT/1h` | Optional CryptoCompare bars | Free | **Done** (`data/raw/btc_1h.csv`, 50 362 bars) |
+| XAU prices 1h | Dukascopy H1 (`dukascopy-node`) | Optional second broker/OpenDataBay spot-check | Free | **Done** (`data/raw/xau_1h.csv`, 49 405 bars) |
+| BTC news | Kaggle BTC news 2021–2024 CSV | HF CoinTelegraph + CryptoCompare news API | Free | **Done** (`btc_news.csv`, 11 123 rows; overlap ~42% bars w/ text) |
+| XAU news | Parse.bot ForexFactory + GDELT gold | More GDELT windows (rate-limited) | Free credits + DIY | **Partial** (`xau_news.csv`, 2 072 rows; ~1.2% bars w/ text — densify later) |
 
 ### Alignment alterations (lock these)
 
@@ -59,14 +59,13 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 
 ### P1 exit checklist
 
-- [ ] `data/raw/btc_1h.csv`, `data/raw/xau_1h.csv`
-- [ ] `data/raw/btc_news.csv`, `data/raw/xau_news.csv`
-- [ ] Schema QA script/pass (columns, dtypes, UTC, monotonic time)
-- [ ] Coverage report: bars N, news U, % bars with text, date span
-- [ ] No look-ahead: max(`published_at`) in window ≤ bar close
+- [x] `data/raw/btc_1h.csv`, `data/raw/xau_1h.csv`
+- [x] `data/raw/btc_news.csv` (solid); `data/raw/xau_news.csv` (sparse — OK to proceed on BTC first)
+- [x] Schema QA via `python scripts/qa_raw_data.py`
+- [x] Coverage report recorded (BTC ~0.42 text rate in overlap; XAU ~0.01 — densify GDELT)
+- [ ] Optional: densify XAU news (`python scripts/fetch_news.py --xau-gdelt` with sleeps)
 
-**Next concrete step:** `python scripts/fetch_raw_data.py --start 2021-01-01` then
-`python scripts/qa_raw_data.py`, then fetch news CSVs.
+**Next concrete step:** build cache for **BTC** on Kaggle (P2), while optionally backfilling XAU news.
 
 ---
 

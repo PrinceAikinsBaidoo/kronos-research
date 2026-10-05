@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,17 +89,15 @@ def coverage(asset: str, prices: pd.DataFrame, news: pd.DataFrame | None):
     # Fraction of bars with ≥1 headline in (close-24h, close]
     window = pd.Timedelta(hours=24)
     # Approximate with searchsorted
-    pubs = news["published_at"].to_numpy()
-    import numpy as np
-    close_ns = close.to_numpy()
-    lo = np.searchsorted(pubs, close_ns - np.timedelta64(window), side="right")
+    pubs = pd.to_datetime(news["published_at"], utc=True).dt.tz_localize(None).to_numpy()
+    close_ns = pd.to_datetime(close, utc=True).dt.tz_localize(None).to_numpy()
+    win = np.timedelta64(int(window.total_seconds()), "s")
+    lo = np.searchsorted(pubs, close_ns - win, side="right")
     hi = np.searchsorted(pubs, close_ns, side="right")
-    has = (hi > lo).mean()
-    # Intersection span
+    has = float((hi > lo).mean()) if len(close_ns) else 0.0
     t0 = max(prices["timestamp"].iloc[0], news["published_at"].iloc[0])
     t1 = min(prices["timestamp"].iloc[-1], news["published_at"].iloc[-1])
-    print(f"[{asset} coverage] bars_with_text_24h={has:.3f}  "
-          f"overlap={t0} → {t1}")
+    print(f"[{asset} coverage] bars_with_text_24h={has:.3f}  overlap={t0} -> {t1}")
 
 
 def main():
