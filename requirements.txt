@@ -9,5 +9,6 @@ torch
 transformers
 huggingface_hub
 kaggle
+python-dotenv
 # Kronos is cloned at the pinned commit by scripts/build_cache.py and src/train.py
 # (git+https://github.com/shiyu-coder/Kronos@67b630e67f6a18c9e9be918d9b4337c960db1e9a)
