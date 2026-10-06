@@ -46,6 +46,9 @@ def clean_text(s: str) -> str:
 def write_news(df: pd.DataFrame, out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     df = df.dropna(subset=["published_at", "text"])
+    df["published_at"] = pd.to_datetime(df["published_at"], utc=True, format="ISO8601", errors="coerce")
+    df = df.dropna(subset=["published_at"])
+    df["published_at"] = df["published_at"].dt.floor("s")
     df["text"] = df["text"].map(clean_text)
     df = df[df["text"].str.len() >= 10]
     df = df.sort_values("published_at").drop_duplicates("text").reset_index(drop=True)

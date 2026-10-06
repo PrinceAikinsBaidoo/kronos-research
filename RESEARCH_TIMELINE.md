@@ -39,9 +39,9 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 
 | Need | Primary source | Confluence / cross-check | Cost | Status |
 | --- | --- | --- | --- | --- |
-| BTC prices 1h | [Binance Vision](https://data.binance.vision/) spot `BTCUSDT/1h` | Optional CryptoCompare bars | Free | **Done** (`data/raw/btc_1h.csv`, 50 362 bars) |
+| BTC prices 1h | [Binance Vision](https://data.binance.vision/) spot `BTCUSDT/1h` (+ daily for current month) | Optional CryptoCompare bars | Free | **Done** (`btc_1h.csv`, 50 473 bars, **2021-01-01 → 2026-10-05**) |
 | XAU prices 1h | Dukascopy H1 (`dukascopy-node`) | Optional second broker/OpenDataBay spot-check | Free | **Done** (`data/raw/xau_1h.csv`, 49 405 bars) |
-| BTC news | Kaggle BTC news 2021–2024 CSV | HF CoinTelegraph + CryptoCompare news API | Free | **Done** (`btc_news.csv`, 11 123 rows; overlap ~42% bars w/ text) |
+| BTC news | monstaws 3h + Argus + mouadja + CryptoPulse + GDELT + others (`scripts/backfill_btc_news_window.py`) | CryptoCompare key still empty; GDELT rate-limits leave **H2 2025 / early 2026 thin** | Free | **Backfilled to 2026-10-05** (61 338 rows; dry-run has_text train 1.00 / val 0.57 / test 0.72) |
 | XAU news | Parse.bot ForexFactory + GDELT gold | More GDELT windows (rate-limited) | Free credits + DIY | **Partial** (`xau_news.csv`, 2 072 rows; ~1.2% bars w/ text — densify later) |
 
 ### Alignment alterations (lock these)
@@ -62,10 +62,11 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 - [x] `data/raw/btc_1h.csv`, `data/raw/xau_1h.csv`
 - [x] `data/raw/btc_news.csv` (solid); `data/raw/xau_news.csv` (sparse — OK to proceed on BTC first)
 - [x] Schema QA via `python scripts/qa_raw_data.py`
-- [x] Coverage report recorded (BTC ~0.42 text rate in overlap; XAU ~0.01 — densify GDELT)
+- [x] Coverage report recorded (BTC bars_with_text_24h ≈ 0.89 over full overlap; dry-run has_text train/val/test ≈ 1.00 / 0.57 / 0.72 — val dips on sparse mid-2025→early-2026; densest from 2026-04)
 - [ ] Optional: densify XAU news (`python scripts/fetch_news.py --xau-gdelt` with sleeps)
+- [ ] Optional: fill thin BTC months (2025-07/08, 2025-11→2026-03) via CryptoCompare key or calmer GDELT retries
 
-**Next concrete step:** build cache for **BTC** on Kaggle (P2), while optionally backfilling XAU news.
+**Next concrete step:** re-upload `kronos-cmaa-raw` and rebuild BTC cache on Kaggle (P2).
 
 ---
 

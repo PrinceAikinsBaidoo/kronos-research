@@ -85,7 +85,7 @@ def load_news(path):
     df = pd.read_csv(path)
     df.columns = [c.strip().lower() for c in df.columns]
     df = df[~df["text"].astype(str).str.match(r"^\s*rt\b", case=False)]  # drop retweets
-    out = pd.DataFrame({"pub": pd.to_datetime(df["published_at"], utc=True),
+    out = pd.DataFrame({"pub": pd.to_datetime(df["published_at"], utc=True, format="ISO8601"),
                         "text": df["text"].astype(str).map(clean_text)})
     out = out[out["text"].str.len() >= 10].sort_values("pub")
     return out.drop_duplicates("text").reset_index(drop=True)  # keeps the earliest copy

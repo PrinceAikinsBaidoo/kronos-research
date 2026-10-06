@@ -41,7 +41,7 @@ def _load_news(path: Path) -> pd.DataFrame:
     df.columns = [c.strip().lower() for c in df.columns]
     if "published_at" not in df.columns or "text" not in df.columns:
         raise ValueError(f"{path.name}: need published_at, text; got {list(df.columns)}")
-    df["published_at"] = pd.to_datetime(df["published_at"], utc=True)
+    df["published_at"] = pd.to_datetime(df["published_at"], utc=True, format="ISO8601")
     df["text"] = df["text"].astype(str)
     return df.sort_values("published_at").drop_duplicates("text").reset_index(drop=True)
 
@@ -89,7 +89,7 @@ def coverage(asset: str, prices: pd.DataFrame, news: pd.DataFrame | None):
     # Fraction of bars with ≥1 headline in (close-24h, close]
     window = pd.Timedelta(hours=24)
     # Approximate with searchsorted
-    pubs = pd.to_datetime(news["published_at"], utc=True).dt.tz_localize(None).to_numpy()
+    pubs = pd.to_datetime(news["published_at"], utc=True, format="ISO8601").dt.tz_localize(None).to_numpy()
     close_ns = pd.to_datetime(close, utc=True).dt.tz_localize(None).to_numpy()
     win = np.timedelta64(int(window.total_seconds()), "s")
     lo = np.searchsorted(pubs, close_ns - win, side="right")

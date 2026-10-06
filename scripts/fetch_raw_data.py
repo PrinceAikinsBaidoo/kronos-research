@@ -36,10 +36,22 @@ BINANCE_COLS = [
 ]
 
 
-def _get(url: str) -> bytes:
-    req = Request(url, headers={"User-Agent": "kronos-cmaa-fetch/1.0"})
-    with urlopen(req, timeout=120) as r:
-        return r.read()
+def _get(url: str, retries: int = 4, timeout: int = 180) -> bytes:
+    last: Exception | None = None
+    for attempt in range(retries):
+        try:
+            req = Request(url, headers={"User-Agent": "kronos-cmaa-fetch/1.0"})
+            with urlopen(req, timeout=timeout) as r:
+                return r.read()
+        except (HTTPError, URLError, TimeoutError) as e:
+            # Don't retry permanent missing months
+            if isinstance(e, HTTPError) and e.code == 404:
+                raise
+            last = e
+            import time
+            time.sleep(2 ** attempt)
+    assert last is not None
+    raise last
 
 
 def month_range(start: date, end: date):
