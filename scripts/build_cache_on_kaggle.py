@@ -61,25 +61,58 @@ def head_sha():
     return r.stdout.strip()
 
 
+def _api_creds() -> tuple[str, str]:
+    """Resolve Kaggle API user/key for private in-kernel dataset publish (never committed)."""
+    load_env()
+    user = (os.environ.get("KAGGLE_USERNAME") or "").strip()
+    key = (os.environ.get("KAGGLE_KEY") or "").strip()
+    for cand in (
+        Path.home() / ".kaggle" / "kaggle.json",
+        Path.home() / ".kaggle" / "credentials.json",
+    ):
+        if cand.exists() and (not user or not key):
+            try:
+                d = json.loads(cand.read_text(encoding="utf-8"))
+                user = user or (d.get("username") or "").strip()
+                key = key or (d.get("key") or "").strip()
+            except Exception:
+                pass
+    return user, key
+
+
 def render_kernel(user: str, asset: str, dry_run: bool, sha: str) -> Path:
     d = ROOT / ".kaggle_push_cache"
     shutil.rmtree(d, ignore_errors=True)
     d.mkdir()
     dry = "1" if dry_run else "0"
+    api_user, api_key = _api_creds()
+    # Inject into private kernel only so dataset publish works without User Secrets.
+    inj_user = json.dumps(api_user or user)
+    inj_key = json.dumps(api_key)
+    inj_gh = json.dumps((os.environ.get("GITHUB_TOKEN") or "").strip())
+    if not api_key:
+        print("WARN: no KAGGLE_KEY in .env / ~/.kaggle — kernel may skip dataset publish")
     code = f'''
-import os, subprocess, sys, shutil
+import json, os, subprocess, sys, shutil
 from pathlib import Path
 
 REPO = "{REPO}"
 COMMIT = "{sha}"
 ASSET = "{asset}"
 DRY = "{dry}" == "1"
+USER = "{user}"
+CACHE_SLUG = "kronos-cmaa-cache"
+# Private-kernel inject (local push); prefer User Secrets when present
+_INJECT = {{
+    "KAGGLE_USERNAME": {inj_user},
+    "KAGGLE_KEY": {inj_key},
+    "GITHUB_TOKEN": {inj_gh},
+}}
 WORK = Path("/kaggle/working")
 REPO_DIR = WORK / "repo"
 OUT = WORK / "cache"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# find raw dataset
 raw = None
 for p in Path("/kaggle/input").rglob("btc_1h.csv" if ASSET == "BTC" else "xau_1h.csv"):
     raw = p.parent
@@ -87,12 +120,20 @@ for p in Path("/kaggle/input").rglob("btc_1h.csv" if ASSET == "BTC" else "xau_1h
 if raw is None:
     raise SystemExit("raw CSVs not found under /kaggle/input (need dataset kronos-cmaa-raw)")
 
-token = ""
+secrets = {{k: v for k, v in _INJECT.items() if v}}
 try:
     from kaggle_secrets import UserSecretsClient
-    token = UserSecretsClient().get_secret("GITHUB_TOKEN")
+    usc = UserSecretsClient()
+    for k in ("GITHUB_TOKEN", "KAGGLE_USERNAME", "KAGGLE_KEY"):
+        try:
+            v = usc.get_secret(k)
+            if v:
+                secrets[k] = v
+        except Exception:
+            pass
 except Exception:
     pass
+token = secrets.get("GITHUB_TOKEN", "")
 url = REPO.replace("https://", f"https://{{token}}@") if token else REPO
 subprocess.run(["git", "clone", "--quiet", url, str(REPO_DIR)], check=True)
 subprocess.run(["git", "checkout", "--quiet", COMMIT], cwd=REPO_DIR, check=True)
@@ -109,6 +150,40 @@ if DRY:
 print("Running:", " ".join(cmd), flush=True)
 subprocess.run(cmd, cwd=REPO_DIR, check=True)
 print("Cache build finished. Output under", OUT)
+
+asset_dir = OUT / ASSET
+for p in sorted(asset_dir.glob("*")):
+    print(f"  OUT {{p.name}}: {{p.stat().st_size}} bytes", flush=True)
+
+if DRY:
+    raise SystemExit(0)
+
+ku = secrets.get("KAGGLE_USERNAME") or USER
+kk = secrets.get("KAGGLE_KEY")
+if not kk:
+    print("WARN: KAGGLE_KEY missing — skip dataset publish", flush=True)
+else:
+    os.environ["KAGGLE_USERNAME"] = ku
+    os.environ["KAGGLE_KEY"] = kk
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "kaggle"], check=True)
+    stage = WORK / "dataset_stage"
+    shutil.rmtree(stage, ignore_errors=True)
+    stage.mkdir(parents=True)
+    shutil.copytree(asset_dir, stage / ASSET)
+    meta = {{"title": CACHE_SLUG, "id": f"{{ku}}/{{CACHE_SLUG}}", "licenses": [{{"name": "CC0-1.0"}}]}}
+    (stage / "dataset-metadata.json").write_text(json.dumps(meta, indent=2))
+    st = subprocess.run(["kaggle", "datasets", "status", f"{{ku}}/{{CACHE_SLUG}}"],
+                        capture_output=True, text=True)
+    blob = (st.stdout or "") + (st.stderr or "")
+    exists = st.returncode == 0 and "404" not in blob and "403" not in blob
+    if exists:
+        print(f"Updating dataset {{ku}}/{{CACHE_SLUG}} ...", flush=True)
+        subprocess.run(["kaggle", "datasets", "version", "-p", str(stage),
+                        "-m", f"Q1 {{ASSET}} cache {{COMMIT[:8]}}", "--dir-mode", "zip"], check=True)
+    else:
+        print(f"Creating dataset {{ku}}/{{CACHE_SLUG}} ...", flush=True)
+        subprocess.run(["kaggle", "datasets", "create", "-p", str(stage), "--dir-mode", "zip"], check=True)
+    print("Dataset publish done.", flush=True)
 '''
     (d / "build_cache_kernel.py").write_text(code, encoding="utf-8")
     meta = {

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-07T16:04:20Z",
+  "generated_at_utc": "2026-10-07T21:29:21Z",
   "files": [
     {
       "path": "data/raw/btc_1h.csv",
@@ -8,13 +8,8 @@
     },
     {
       "path": "data/processed/btc_news_q1.csv",
-      "sha256": "91032866f40f5fe4b12aa66447cc83924f4a80a7c5b35c579f6ca37ae5560947",
-      "bytes": 80371929
-    },
-    {
-      "path": "data/processed/btc_news_q1_slim.csv",
-      "sha256": "e02c2a8ee17fcc27c7ecf424ede9102fafd5a356ecd79fa1634894d32a1398ef",
-      "bytes": 79896867
+      "sha256": "328adae948079f95493a486c3fab8b1ac988814df948d3516901454d2c4747ba",
+      "bytes": 80409977
     }
   ]
 }

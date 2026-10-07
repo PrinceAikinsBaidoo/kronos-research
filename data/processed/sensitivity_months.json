@@ -1,0 +1,10 @@
+{
+  "excluded_months": [
+    "2025-06",
+    "2026-04"
+  ],
+  "rows_before": 59715,
+  "rows_after": 55543,
+  "rows_removed": 4172,
+  "out": "C:/Users/Prince Aikins Baidoo/Music/Kronos_Research/kronos-cmaa/data/processed/btc_news_q1_sensitivity.csv"
+}

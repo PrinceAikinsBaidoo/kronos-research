@@ -41,7 +41,7 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 | --- | --- | --- | --- | --- |
 | BTC prices 1h | [Binance Vision](https://data.binance.vision/) spot `BTCUSDT/1h` (+ daily for current month) | Optional CryptoCompare bars | Free | **Done** (`btc_1h.csv`, 50 473 bars, **2021-01-01 → 2026-10-05**) |
 | XAU prices 1h | Dukascopy H1 (`dukascopy-node`) | Optional second broker/OpenDataBay spot-check | Free | **Done** (`data/raw/xau_1h.csv`, 49 405 bars) |
-| BTC news | monstaws + Argus + mouadja + GDELT (sparse + JulSep dense) + Finnhub | CryptoCompare unused; Finnhub from ~2025-10 | Free | **77 992 rows → 2026-10-05**; overall bar text **0.985**; Jul–Sep 2025 now **94–100%** |
+| BTC news | monstaws + Argus + mouadja + GDELT (sparse + JulSep + June attempt) + Finnhub | CryptoCompare unused; Finnhub from ~2025-10 | Free | **78 541 rows → 2026-10-05**; overall bar text **0.988**; Jul–Sep **94–100%**; Jun residual **~44%** |
 | XAU news | Parse.bot ForexFactory + GDELT gold | More GDELT windows (rate-limited) | Free credits + DIY | **Partial** (`xau_news.csv`, 2 072 rows; ~1.2% bars w/ text — densify later) |
 
 ### Alignment alterations (lock these)
@@ -64,13 +64,13 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 - [x] Schema QA via `python scripts/qa_raw_data.py`
 - [x] Coverage report recorded — after JulSep GDELT densify: overall **0.985**; Jul25–Mar26 **0.988**; approx has_text train/val/test ≈ **1.00 / 0.92 / 0.98**
 - [x] Jul–Sep 2025 densified (`kronos-cmaa-gdelt-julsep` → merged)
-- [ ] Soft spots: densify **2025-06** via GDELT (`kronos-cmaa-gdelt-june`); disclose **2026-04** (~82%) + sensitivity
+- [x] Soft spots: **2025-06** GDELT densify residual (~44% bar text; early-month only) documented + sensitivity; **2026-04** (~82%) disclosed
 - [ ] Optional: densify XAU news (deferred — BTC primary for Q1 CS/fintech)
 - [x] Finnhub backfill Oct 2025–Mar 2026
-- [ ] Q1 freeze: `data/processed/btc_news_q1.csv` + `MANIFEST.json` + [docs/DATASHEET_BTC.md](docs/DATASHEET_BTC.md)
-- [ ] Human relevance audit sample (`scripts/sample_relevance_audit.py`, N=400)
+- [x] Q1 freeze: `data/processed/btc_news_q1.csv` + `MANIFEST.json` + [docs/DATASHEET_BTC.md](docs/DATASHEET_BTC.md)
+- [x] Human relevance audit sample (`scripts/sample_relevance_audit.py`, N=400)
 
-**Next concrete step:** finish June densify → run `prepare_q1_btc_news.py` + `hash_freeze.py` → re-upload processed BTC → rebuild cache → lock `locked/baselines/BTC.json`.
+**Next concrete step:** re-upload Q1 processed BTC → rebuild/publish `kronos-cmaa-cache` → lock `locked/baselines/BTC.json` → smoke + H000.
 
 ---
 

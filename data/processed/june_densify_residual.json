@@ -1,0 +1,13 @@
+{
+  "month": "2025-06",
+  "kernel": "princeaikinsbaidoo/kronos-cmaa-gdelt-june",
+  "status": "COMPLETE_WITH_RESIDUAL",
+  "rows_added": 552,
+  "coverage_span": "2025-06-01 → 2025-06-09 (later weeks missed via GDELT 429)",
+  "bars_with_text_24h_pct": 43.9,
+  "gate_target_pct": 90.0,
+  "gate_met": false,
+  "mitigation": "Disclose in datasheet; sensitivity excluding 2025-06 (and 2026-04) via scripts/sensitivity_exclude_months.py",
+  "raw_news_rows_after_merge": 78541,
+  "overall_bars_with_text_24h": 0.988
+}

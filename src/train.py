@@ -70,6 +70,47 @@ def find_asset_dir(cache_dir, asset):
     )
 
 
+class ShardedTextStates:
+    """Row-indexed view over text_states_*.npy shards (mmap)."""
+
+    def __init__(self, asset_dir: Path, meta: dict):
+        shape = tuple(meta["shape"])
+        paths = [asset_dir / n for n in meta["shards"]]
+        missing = [str(p) for p in paths if not p.exists()]
+        if missing:
+            raise FileNotFoundError(f"Missing text_states shards: {missing[:3]}")
+        self.shards = [np.load(p, mmap_mode="r") for p in paths]
+        self.starts = np.cumsum([0] + [s.shape[0] for s in self.shards[:-1]]).tolist() if self.shards else []
+        self.shape = shape
+        assert sum(s.shape[0] for s in self.shards) == shape[0]
+
+    def __len__(self):
+        return int(self.shape[0])
+
+    def __getitem__(self, i):
+        i = int(i)
+        for start, shard in zip(self.starts, self.shards):
+            if i < start + shard.shape[0]:
+                return shard[i - start]
+        raise IndexError(i)
+
+
+def load_text_states(asset_dir: Path):
+    """Prefer sharded layout; fall back to monolithic text_states.npy."""
+    shard_meta = asset_dir / "text_states_shards.json"
+    if shard_meta.exists():
+        meta = json.loads(shard_meta.read_text(encoding="utf-8"))
+        if meta.get("shards"):
+            return ShardedTextStates(asset_dir, meta)
+    path = asset_dir / "text_states.npy"
+    arr = np.load(path, mmap_mode="r")
+    if arr.shape[0] == 0 and (asset_dir / "text_states_shards.json").exists():
+        raise FileNotFoundError(
+            f"{path} is empty placeholder but shards missing/unreadable under {asset_dir}"
+        )
+    return arr
+
+
 class CacheDataset(Dataset):
     """Memory-maps cache arrays; resolves text rows via text_idx (-1 = no news)."""
 
@@ -83,8 +124,9 @@ class CacheDataset(Dataset):
         self.text_states = arrays["text_states"]
         self.text_mask = arrays["text_mask"]
         self.indices = np.asarray(indices, dtype=np.int64)
-        self.T = int(self.text_states.shape[1]) if len(self.text_states) else 128
-        self.d_text = int(self.text_states.shape[2]) if len(self.text_states) else D_TEXT
+        n_text = len(self.text_states)
+        self.T = int(self.text_states.shape[1]) if n_text else 128
+        self.d_text = int(self.text_states.shape[2]) if n_text else D_TEXT
 
     def __len__(self):
         return len(self.indices)
@@ -123,7 +165,7 @@ def load_cache(cfg, asset, cache_dir, smoke):
         "mom": np.load(asset_dir / "mom.npy", mmap_mode="r"),
         "sent": np.load(asset_dir / "sent.npy", mmap_mode="r"),
         "text_idx": np.load(asset_dir / "text_idx.npy", mmap_mode="r"),
-        "text_states": np.load(asset_dir / "text_states.npy", mmap_mode="r"),
+        "text_states": load_text_states(asset_dir),
         "text_mask": np.load(asset_dir / "text_mask.npy", mmap_mode="r"),
     }
     assert arrays["s1_ids"].shape[0] == N

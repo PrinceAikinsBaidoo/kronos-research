@@ -29,7 +29,7 @@ XAU is **out of scope** for the primary paper claim until news coverage matches 
 
 - **Soft spots:**  
   - **2026-04** ~82% of bars have ≥1 headline in prior 24h — disclosed; run sensitivity excluding that month.  
-  - **2025-06** densified via GDELT (target ≥~90% bar text); residual documented in audit if any.
+  - **2025-06** GDELT densify on Kaggle completed with rate-limit residual: only **2025-06-01→06-09** filled (~552 new rows); month bar text ≈ **43.9%** (below ~90% gate). Documented in `data/processed/june_densify_residual.json`. Sensitivity: exclude `2025-06` via `scripts/sensitivity_exclude_months.py`.
 
 - **Does the dataset contain confidential data?** No personal identifiers intended; public market/news text only.
 

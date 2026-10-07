@@ -239,25 +239,40 @@ def build(asset, prices, news, a, encode_fn, embed_fn, out_root):
         s1[i:i + len(idx)], s2[i:i + len(idx)] = encode_fn(normalize_windows(w))
 
     # ---- FinBERT token states, one row per unique text, streamed to disk
+    # Shard ~400MB parts so `kaggle kernels output` can download (multi-GB single npy often arrives 0 bytes).
     T = a.max_text_tokens
-    if U:
-        states = np.lib.format.open_memmap(out / "text_states.npy", mode="w+", dtype=np.float16,
-                                           shape=(U, T, D_TEXT))
-    else:
-        states = None
+    SHARD_ROWS = 2048  # 2048*128*768*2 ≈ 402 MB
     mask = np.zeros((U, T), dtype=bool)
     sent_u = np.zeros(U, dtype=np.float32)
     texts_all = news["text"].tolist() if U else []
-    for i in range(0, U, a.text_batch):
-        chunk = [" [SEP] ".join(texts_all[s:h][::-1]) for s, h in uniq[i:i + a.text_batch]]  # newest first
-        hid, m, s = embed_fn(chunk)
-        states[i:i + len(chunk)] = hid
-        mask[i:i + len(chunk)] = m
-        sent_u[i:i + len(chunk)] = s
-    if states is not None:
-        states.flush()
+    shard_paths: list[str] = []
+    if U:
+        for s0 in range(0, U, SHARD_ROWS):
+            s1 = min(U, s0 + SHARD_ROWS)
+            part = np.zeros((s1 - s0, T, D_TEXT), dtype=np.float16)
+            for i in range(s0, s1, a.text_batch):
+                j = min(s1, i + a.text_batch)
+                chunk = [" [SEP] ".join(texts_all[s:h][::-1]) for s, h in uniq[i:j]]  # newest first
+                hid, m, s = embed_fn(chunk)
+                part[i - s0:i - s0 + len(chunk)] = hid
+                mask[i:i + len(chunk)] = m
+                sent_u[i:i + len(chunk)] = s
+            name = f"text_states_{s0:06d}_{s1:06d}.npy"
+            np.save(out / name, part)
+            shard_paths.append(name)
+            print(f"  wrote {name} bytes={(out / name).stat().st_size}", flush=True)
+            del part
+        # Tiny placeholder so older loaders fail loudly if shards are ignored
+        np.save(out / "text_states.npy", np.zeros((0, T, D_TEXT), dtype=np.float16))
+        (out / "text_states_shards.json").write_text(
+            json.dumps({"shape": [U, T, D_TEXT], "dtype": "float16", "shards": shard_paths}, indent=2)
+        )
+        print(f"  text_states shards={len(shard_paths)} shape=({U},{T},{D_TEXT})", flush=True)
     else:
         np.save(out / "text_states.npy", np.zeros((0, T, D_TEXT), dtype=np.float16))
+        (out / "text_states_shards.json").write_text(
+            json.dumps({"shape": [0, T, D_TEXT], "dtype": "float16", "shards": []}, indent=2)
+        )
 
     # ---- z-score with TRAIN statistics only
     sent_raw = np.zeros(N, dtype=np.float32)
