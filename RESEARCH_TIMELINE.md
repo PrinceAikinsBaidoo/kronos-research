@@ -41,7 +41,7 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 | --- | --- | --- | --- | --- |
 | BTC prices 1h | [Binance Vision](https://data.binance.vision/) spot `BTCUSDT/1h` (+ daily for current month) | Optional CryptoCompare bars | Free | **Done** (`btc_1h.csv`, 50 473 bars, **2021-01-01 → 2026-10-05**) |
 | XAU prices 1h | Dukascopy H1 (`dukascopy-node`) | Optional second broker/OpenDataBay spot-check | Free | **Done** (`data/raw/xau_1h.csv`, 49 405 bars) |
-| BTC news | monstaws 3h + Argus + mouadja + CryptoPulse + GDELT + others (`scripts/backfill_btc_news_window.py`) | CryptoCompare key still empty; GDELT rate-limits leave **H2 2025 / early 2026 thin** | Free | **Backfilled to 2026-10-05** (61 338 rows; dry-run has_text train 1.00 / val 0.57 / test 0.72) |
+| BTC news | monstaws + Argus + mouadja + GDELT (sparse + JulSep dense) + Finnhub | CryptoCompare unused; Finnhub from ~2025-10 | Free | **77 992 rows → 2026-10-05**; overall bar text **0.985**; Jul–Sep 2025 now **94–100%** |
 | XAU news | Parse.bot ForexFactory + GDELT gold | More GDELT windows (rate-limited) | Free credits + DIY | **Partial** (`xau_news.csv`, 2 072 rows; ~1.2% bars w/ text — densify later) |
 
 ### Alignment alterations (lock these)
@@ -62,11 +62,15 @@ Primary metric: **validation AUC-PR**. Explore GPU budget: **18 h / rolling 7 da
 - [x] `data/raw/btc_1h.csv`, `data/raw/xau_1h.csv`
 - [x] `data/raw/btc_news.csv` (solid); `data/raw/xau_news.csv` (sparse — OK to proceed on BTC first)
 - [x] Schema QA via `python scripts/qa_raw_data.py`
-- [x] Coverage report recorded (BTC bars_with_text_24h ≈ 0.89 over full overlap; dry-run has_text train/val/test ≈ 1.00 / 0.57 / 0.72 — val dips on sparse mid-2025→early-2026; densest from 2026-04)
-- [ ] Optional: densify XAU news (`python scripts/fetch_news.py --xau-gdelt` with sleeps)
-- [ ] Optional: fill thin BTC months (2025-07/08, 2025-11→2026-03) via CryptoCompare key or calmer GDELT retries
+- [x] Coverage report recorded — after JulSep GDELT densify: overall **0.985**; Jul25–Mar26 **0.988**; approx has_text train/val/test ≈ **1.00 / 0.92 / 0.98**
+- [x] Jul–Sep 2025 densified (`kronos-cmaa-gdelt-julsep` → merged)
+- [ ] Soft spots: densify **2025-06** via GDELT (`kronos-cmaa-gdelt-june`); disclose **2026-04** (~82%) + sensitivity
+- [ ] Optional: densify XAU news (deferred — BTC primary for Q1 CS/fintech)
+- [x] Finnhub backfill Oct 2025–Mar 2026
+- [ ] Q1 freeze: `data/processed/btc_news_q1.csv` + `MANIFEST.json` + [docs/DATASHEET_BTC.md](docs/DATASHEET_BTC.md)
+- [ ] Human relevance audit sample (`scripts/sample_relevance_audit.py`, N=400)
 
-**Next concrete step:** re-upload `kronos-cmaa-raw` and rebuild BTC cache on Kaggle (P2).
+**Next concrete step:** finish June densify → run `prepare_q1_btc_news.py` + `hash_freeze.py` → re-upload processed BTC → rebuild cache → lock `locked/baselines/BTC.json`.
 
 ---
 

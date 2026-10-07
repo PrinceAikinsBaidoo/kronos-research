@@ -1,0 +1,32 @@
+seed: 42
+asset: BTC
+kronos_model_id: NeoQuasar/Kronos-base
+ablation: H000_seed_noise
+
+data:
+  max_text_tokens: 128
+  spike_horizon_bars: 24
+  spike_quantile: 0.90
+
+adapter:
+  d_model: 512
+  n_heads: 8
+  layers_per_point: 2
+  insert_after: [6, 9]
+  dropout: 0.1
+  gate: true
+
+contrastive:
+  weight: 0.5
+  tau: 0.07
+  sigma: 1.0
+
+loss:
+  focal_gamma: 2.0
+
+train:
+  lr: 2.0e-4
+  batch_size: 64
+  epochs: 20
+  patience: 3
+  max_minutes: 25

@@ -1,0 +1,20 @@
+{
+  "generated_at_utc": "2026-10-07T16:04:20Z",
+  "files": [
+    {
+      "path": "data/raw/btc_1h.csv",
+      "sha256": "f3b11d6d274a4aec66e34c0bc782fc58b37bfefe09f630254846225d0933ac5e",
+      "bytes": 4565585
+    },
+    {
+      "path": "data/processed/btc_news_q1.csv",
+      "sha256": "91032866f40f5fe4b12aa66447cc83924f4a80a7c5b35c579f6ca37ae5560947",
+      "bytes": 80371929
+    },
+    {
+      "path": "data/processed/btc_news_q1_slim.csv",
+      "sha256": "e02c2a8ee17fcc27c7ecf424ede9102fafd5a356ecd79fa1634894d32a1398ef",
+      "bytes": 79896867
+    }
+  ]
+}
