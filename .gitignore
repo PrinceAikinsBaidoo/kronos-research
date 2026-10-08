@@ -7,6 +7,8 @@ experiments/_cache_build/
 experiments/_cache_publish/
 experiments/_baseline/
 experiments/_gdelt_june/
+experiments/_*.log
+experiments/_smoke_run.log
 __pycache__/
 *.pyc
 STOP

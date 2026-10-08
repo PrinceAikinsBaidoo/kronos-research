@@ -34,13 +34,22 @@ def run(cmd, check=True, capture=False):
 
 
 def kaggle_user():
+    try:
+        from scripts.load_env import load_env
+        load_env()
+    except Exception:
+        pass
     u = os.environ.get("KAGGLE_USERNAME")
     if u:
         return u
     p = Path.home() / ".kaggle" / "kaggle.json"
     if p.exists():
         return json.loads(p.read_text())["username"]
-    sys.exit("Set KAGGLE_USERNAME or create ~/.kaggle/kaggle.json")
+    r = run(["kaggle", "config", "view"], check=False, capture=True)
+    for line in (r.stdout or "").splitlines():
+        if "username" in line.lower():
+            return line.split(":")[-1].strip().strip("'\"")
+    sys.exit("Set KAGGLE_USERNAME or authenticate with `kaggle auth login`")
 
 
 def head_commit():
