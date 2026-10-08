@@ -247,17 +247,17 @@ def build(asset, prices, news, a, encode_fn, embed_fn, out_root):
     texts_all = news["text"].tolist() if U else []
     shard_paths: list[str] = []
     if U:
-        for s0 in range(0, U, SHARD_ROWS):
-            s1 = min(U, s0 + SHARD_ROWS)
-            part = np.zeros((s1 - s0, T, D_TEXT), dtype=np.float16)
-            for i in range(s0, s1, a.text_batch):
-                j = min(s1, i + a.text_batch)
+        for row0 in range(0, U, SHARD_ROWS):
+            row1 = min(U, row0 + SHARD_ROWS)
+            part = np.zeros((row1 - row0, T, D_TEXT), dtype=np.float16)
+            for i in range(row0, row1, a.text_batch):
+                j = min(row1, i + a.text_batch)
                 chunk = [" [SEP] ".join(texts_all[s:h][::-1]) for s, h in uniq[i:j]]  # newest first
-                hid, m, s = embed_fn(chunk)
-                part[i - s0:i - s0 + len(chunk)] = hid
+                hid, m, sent_chunk = embed_fn(chunk)
+                part[i - row0:i - row0 + len(chunk)] = hid
                 mask[i:i + len(chunk)] = m
-                sent_u[i:i + len(chunk)] = s
-            name = f"text_states_{s0:06d}_{s1:06d}.npy"
+                sent_u[i:i + len(chunk)] = sent_chunk
+            name = f"text_states_{row0:06d}_{row1:06d}.npy"
             np.save(out / name, part)
             shard_paths.append(name)
             print(f"  wrote {name} bytes={(out / name).stat().st_size}", flush=True)
@@ -268,6 +268,9 @@ def build(asset, prices, news, a, encode_fn, embed_fn, out_root):
             json.dumps({"shape": [U, T, D_TEXT], "dtype": "float16", "shards": shard_paths}, indent=2)
         )
         print(f"  text_states shards={len(shard_paths)} shape=({U},{T},{D_TEXT})", flush=True)
+        assert s1.shape == (N, L) and s2.shape == (N, L), (
+            f"token arrays clobbered: s1={getattr(s1, 'shape', type(s1))} s2={getattr(s2, 'shape', type(s2))}"
+        )
     else:
         np.save(out / "text_states.npy", np.zeros((0, T, D_TEXT), dtype=np.float16))
         (out / "text_states_shards.json").write_text(
