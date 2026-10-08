@@ -1,0 +1,17 @@
+{
+  "asset": "BTC",
+  "model": "price_only_kronos",
+  "kronos_model_id": "NeoQuasar/Kronos-base",
+  "seed": 42,
+  "split": "chronological_70_15_15",
+  "metrics_window": "validation",
+  "val": {
+    "auc_pr": 0.02655301862245304,
+    "auc_roc": 0.41528759692984185,
+    "macro_f1": 0.5020764756965244,
+    "threshold": 0.37919138659424517,
+    "ood_perplexity": 12.640229225158691
+  },
+  "notes": "No CMAA; spike head on pooled Kronos context only. Same cache/labels as CMAA.",
+  "smoke": false
+}
