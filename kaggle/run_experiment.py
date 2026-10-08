@@ -33,11 +33,16 @@ def fail(msg):
 
 
 def find_cache():
+    # Dataset layout: .../kronos-cmaa-cache[/BTC]
     for root, dirs, _ in os.walk("/kaggle/input"):
         if CACHE_SLUG in os.path.basename(root):
             return root
-        if root.count(os.sep) > 4:
+        if root.count(os.sep) > 6:
             dirs[:] = []
+    # Builder-kernel layout: .../kronos-cmaa-cache-builder/cache/BTC/meta.json
+    for dirpath, _, files in os.walk("/kaggle/input"):
+        if "meta.json" in files and os.path.basename(dirpath) == ASSET:
+            return os.path.dirname(dirpath) if os.path.basename(os.path.dirname(dirpath)) == "cache" else dirpath
     return None
 
 

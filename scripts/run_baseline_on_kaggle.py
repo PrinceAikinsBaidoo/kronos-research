@@ -23,6 +23,7 @@ from scripts.load_env import load_env  # noqa: E402
 
 SLUG = "kronos-cmaa-baseline"
 CACHE_SLUG = "kronos-cmaa-cache"
+BUILDER_SLUG = "kronos-cmaa-cache-builder"
 REPO = "https://github.com/PrinceAikinsBaidoo/kronos-research.git"
 POLL_S = 30
 MAX_WAIT_MIN = 90
@@ -112,9 +113,10 @@ print(out.read_text()[:2000], flush=True)
         "is_private": True,
         "enable_gpu": True,
         "enable_internet": True,
-        "dataset_sources": [f"{user}/{CACHE_SLUG}"],
+        # Prefer builder kernel output until kronos-cmaa-cache dataset is published
+        "dataset_sources": [],
         "competition_sources": [],
-        "kernel_sources": [],
+        "kernel_sources": [f"{user}/{BUILDER_SLUG}"],
     }
     (d / "kernel-metadata.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 

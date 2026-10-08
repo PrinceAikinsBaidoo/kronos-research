@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SLUG = "kronos-cmaa-runner"
 CACHE_SLUG = "kronos-cmaa-cache"
+BUILDER_SLUG = "kronos-cmaa-cache-builder"
 REPO_URL = "https://github.com/PrinceAikinsBaidoo/kronos-research.git"
 EXPLORE_BUDGET_H = 18.0   # rolling 7 days; --final runs are exempt (human use only)
 POLL_S = 30
@@ -93,11 +94,12 @@ def render_push_dir(user, sha, exp, asset, smoke, config):
     for k, v in subs.items():
         code = code.replace(k, v)
     (d / "run_experiment.py").write_text(code)
+    # Use cache-builder kernel output until private dataset kronos-cmaa-cache exists
     meta = {"id": f"{user}/{SLUG}", "title": SLUG, "code_file": "run_experiment.py",
             "language": "python", "kernel_type": "script", "is_private": True,
             "enable_gpu": True, "enable_internet": True,
-            "dataset_sources": [f"{user}/{CACHE_SLUG}"], "competition_sources": [],
-            "kernel_sources": []}
+            "dataset_sources": [], "competition_sources": [],
+            "kernel_sources": [f"{user}/{BUILDER_SLUG}"]}
     (d / "kernel-metadata.json").write_text(json.dumps(meta, indent=2))
     return d
 
