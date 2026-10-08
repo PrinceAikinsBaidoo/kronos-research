@@ -1,8 +1,12 @@
 .kaggle_push/
-.kaggle_push_cache/
+.kaggle_push_*/
 .kaggle_raw_dataset/
+.kaggle_cache_dataset/
 experiments/*/kaggle_out/
 experiments/_cache_build/
+experiments/_cache_publish/
+experiments/_baseline/
+experiments/_gdelt_june/
 __pycache__/
 *.pyc
 STOP
@@ -18,3 +22,8 @@ kaggle.json
 data/raw/*.csv
 data/raw/_dukascopy_tmp/
 data/raw/_news_tmp/
+data/raw/_news_tmp*/
+data/tmp_kaggle_news/
+data/processed/*.csv
+data/processed/_dry/
+scripts/_run_gdelt_june_local.py
