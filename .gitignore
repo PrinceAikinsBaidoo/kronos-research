@@ -9,6 +9,8 @@ experiments/_baseline/
 experiments/_gdelt_june/
 experiments/_*.log
 experiments/_smoke_run.log
+experiments/_probe/
+experiments/gpu_ledger.csv
 __pycache__/
 *.pyc
 STOP
